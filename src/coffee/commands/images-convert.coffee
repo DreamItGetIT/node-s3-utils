@@ -14,6 +14,7 @@ program
 .option '-l, --logFile <path>', 'optionally log to a file instead of printing to console (errors will still be printed to stderr)'
 .option '--sendMetrics', 'optionally send statsd metrics', false
 .option '--metricsPrefix <name>', 'optionally specify a prefix for the metrics'
+.option '-f, --resizeDetailsFile <path>', 'optionally specify a file to store resizes to (csv)'
 .parse process.argv
 
 debug 'parsing args: %s', process.argv
@@ -32,6 +33,7 @@ try
       metrics:
         active: program.sendMetrics
         prefix: program.metricsPrefix
+      resizeDetailsFileName: program.resizeDetailsFile
     s3client.sendMetrics 'increment', 'commands.images.convert'
     descriptions = Helpers.parseJsonFromFile program.descriptions
 

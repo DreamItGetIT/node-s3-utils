@@ -25,7 +25,7 @@ class S3Client
    * {@link https://github.com/LearnBoost/knox}
   ###
   constructor: (opts = {}) ->
-    {key, secret, bucket, logger, metrics} = opts
+    {key, secret, bucket, logger, metrics, resizeDetailsFileName} = opts
     throw new CustomError 'Missing AWS \'key\'' unless key
     throw new CustomError 'Missing AWS \'secret\'' unless secret
     throw new CustomError 'Missing AWS \'bucket\'' unless bucket
@@ -46,6 +46,12 @@ class S3Client
         on_error: -> #noop
     else
       @_metrics = undefined
+    if resizeDetailsFileName?
+      that = @
+      @_resizeDetailsStream = fs.createWriteStream(resizeDetailsFileName)
+      @_resizeDetailsStream.write("id\tpostfix\twidth\theight\n")
+    else
+      @_resizeDetailsStream = undefined
 
   on: (eventName, cb) -> @_ee.on eventName, cb
   emit: (eventName, obj) -> @_ee.emit eventName, obj
@@ -54,6 +60,15 @@ class S3Client
     prefix = if @_metricsPrefix then "#{@_metricsPrefix}." else ''
     switch typ
       when 'increment' then @_metrics.increment "#{prefix}#{key}"
+  storeResizeDetails: (postfix, details) ->
+    return unless @_resizeDetailsStream
+    @_resizeDetailsStream.write([
+      details.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/)[0],
+      postfix,
+      details.width,
+      details.height
+    ].join("\t") + "\n")
+
 
   ###*
    * Lists all files in the given bucket
@@ -214,6 +229,7 @@ class S3Client
         width: format.width
         height: format.height
       .then (image) =>
+        @storeResizeDetails format.suffix, image
         @sendMetrics 'increment', 'image.resized'
         header = 'x-amz-acl': 'public-read'
         aws_content_key = @_imageKey "#{prefix}#{basename}", format.suffix, extension
