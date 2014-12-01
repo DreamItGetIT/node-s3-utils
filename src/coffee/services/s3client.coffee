@@ -99,9 +99,9 @@ class S3Client
   ###
   filteredList: (headers, regex, rejectFolders = true) ->
     @list headers
-    .then (data) ->
-      debug 'listing %s files', data.Contents.length
-      files = _.reject data.Contents, (content) ->
+    .then (files) ->
+      debug 'listing %s files', files.length
+      files = _.reject files, (content) ->
         if rejectFolders then content.Size is 0 else false
 
       if regex
