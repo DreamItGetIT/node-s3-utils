@@ -78,8 +78,7 @@ class S3Client
   ###
   list: (headers) ->
     @sendMetrics 'increment', 'file.list'
-    lister = new S3Lister(@_knoxClient, prefix: headers.prefix_unprocessed)
-    debug 'listing files in %s', headers.prefix_unprocessed
+    lister = new S3Lister @_knoxClient, headers
     files = []
     new Promise (resolve, reject) ->
       lister.on('data', (file) ->
