@@ -77,7 +77,16 @@ class S3Client
   ###
   list: (headers) ->
     @sendMetrics 'increment', 'file.list'
-    @_knoxClient.listAsync headers
+    lister = new S3Lister(@_knoxClient, prefix: description.prefix_unprocessed)
+    files = []
+    new Promise (resolve, reject) ->
+      lister.on('data', (file) ->
+        files.push(file)
+      )
+      lister.on('error', reject)
+      lister.on('end', ->
+        resolve(files)
+      )
 
   ###*
    * Lists all files in the given bucket, filtering by an optional regex
@@ -231,7 +240,9 @@ class S3Client
       .then (image) =>
         @storeResizeDetails format.suffix, image
         @sendMetrics 'increment', 'image.resized'
-        header = 'x-amz-acl': 'public-read'
+        header =
+          'x-amz-acl': 'public-read'
+          'Cache-Control': 'max-age=31536000'
         aws_content_key = @_imageKey "#{prefix}#{basename}", format.suffix, extension
         debug 'about to upload resized image to %s', aws_content_key
         @putFile tmp_resized, aws_content_key, header
