@@ -5,7 +5,7 @@ path = require 'path'
 knox = require 'knox'
 Lynx = require 'lynx'
 Promise = require 'bluebird'
-easyimage = require 'easyimage'
+gm = require 'gm'
 {CustomError} = require '../errors'
 fs = Promise.promisifyAll require('fs')
 S3Lister = require 's3-lister'
@@ -61,13 +61,13 @@ class S3Client
     prefix = if @_metricsPrefix then "#{@_metricsPrefix}." else ''
     switch typ
       when 'increment' then @_metrics.increment "#{prefix}#{key}"
-  storeResizeDetails: (postfix, details) ->
+  storeResizeDetails: (filename, postfix, dimensions) ->
     return unless @_resizeDetailsStream
     @_resizeDetailsStream.write([
-      details.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/)[0],
+      filename.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/)[0],
       postfix,
-      details.width,
-      details.height
+      dimensions.width,
+      dimensions.height
     ].join("\t") + "\n")
 
 
@@ -233,25 +233,20 @@ class S3Client
       tmp_resized = @_imageKey "#{tmpDir}/#{basename}", format.suffix, extension
 
       debug 'about to resize image %s to %s', image, tmp_resized
-      easyimage.resize
-        src: tmp_original
-        dst: tmp_resized
-        width: format.width
-        height: format.height
-      .then (image) =>
-        @storeResizeDetails format.suffix, image
-        @sendMetrics 'increment', 'image.resized'
-        header =
-          'x-amz-acl': 'public-read'
-          'Cache-Control': 'max-age=31536000'
-        aws_content_key = @_imageKey "#{prefix}#{basename}", format.suffix, extension
-        debug 'about to upload resized image to %s', aws_content_key
-        @putFile tmp_resized, aws_content_key, header
-      .catch (error) =>
-        debug 'error while converting / uploading image %s, skipping...', image
-        @_logger?.error 'error while converting / uploading image %s, skipping...', image, error.message
-        Promise.resolve()
-    , {concurrency: 2}
+      gm(tmp_original).resize format.height, format.width, ">"
+      .write tmp_resized, (err) =>
+        if err != undefined then Promise.reject(err)
+        gm(tmp_resized).size (err, dimensions) =>
+          if err != undefined then Promise.reject(err)
+          @storeResizeDetails basename, format.suffix, dimensions
+          @sendMetrics 'increment', 'image.resized'
+          header =
+            'x-amz-acl': 'public-read'
+            'Cache-Control': 'max-age=31536000'
+          aws_content_key = @_imageKey "#{prefix}#{basename}", format.suffix, extension
+          debug 'about to upload resized image to %s', aws_content_key
+          @putFile tmp_resized, aws_content_key, header
+          Promise.resolve()
 
   ###*
    * Resizes and uploads a list of images to the bucket
