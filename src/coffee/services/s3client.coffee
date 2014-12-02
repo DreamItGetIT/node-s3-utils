@@ -247,6 +247,7 @@ class S3Client
           debug 'about to upload resized image to %s', aws_content_key
           @putFile tmp_resized, aws_content_key, header
           Promise.resolve()
+    , {concurrency: 1}
 
   ###*
    * Resizes and uploads a list of images to the bucket
