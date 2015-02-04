@@ -30,14 +30,14 @@
   "engines": {
     "node": ">= 0.10.x"
   },
-  "bin" : {
-    "s3utils" : "./bin/s3utils",
-    "s3utils-files" : "./bin/s3utils-files",
-    "s3utils-files-list" : "./bin/s3utils-files-list",
-    "s3utils-files-delete" : "./bin/s3utils-files-delete",
-    "s3utils-files-upload" : "./bin/s3utils-files-upload",
-    "s3utils-images" : "./bin/s3utils-images",
-    "s3utils-images-convert" : "./bin/s3utils-images-convert"
+  "bin": {
+    "s3utils": "./bin/s3utils",
+    "s3utils-files": "./bin/s3utils-files",
+    "s3utils-files-list": "./bin/s3utils-files-list",
+    "s3utils-files-delete": "./bin/s3utils-files-delete",
+    "s3utils-files-upload": "./bin/s3utils-files-upload",
+    "s3utils-images": "./bin/s3utils-images",
+    "s3utils-images-convert": "./bin/s3utils-images-convert"
   },
   "scripts": {
     "test": "grunt coverage"
@@ -47,10 +47,12 @@
     "commander": "2.3.0",
     "debug": "2.0.0",
     "easyimage": "1.0.2",
+    "gm": "^1.17.0",
     "knox": "0.9.1",
     "lynx": "0.2.0",
     "pkginfo": "0.3.0",
     "progress": "1.1.8",
+    "s3-lister": "^0.1.0",
     "tmp": "0.0.23",
     "underscore": "1.7.0",
     "winston": "0.7.x"
